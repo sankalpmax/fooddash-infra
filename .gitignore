@@ -1,0 +1,27 @@
+# Local .terraform directories
+**/.terraform/*
+
+# Terraform lock files (keep this if you want to pin provider versions)
+# .terraform.lock.hcl
+
+# Terraform state files - NEVER commit these, they contain sensitive data
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+
+# Terraform variable files that may contain secrets
+*.tfvars
+*.tfvars.json
+
+# Terraform crash log files
+crash.log
+crash.*.log
+
+# Terraform override files
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Terraform plan files
+*.tfplan
