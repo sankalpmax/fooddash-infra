@@ -6,6 +6,22 @@ resource "aws_vpc" "food_app_vpc" {
   }
 }
 
+resource "aws_internet_gateway" "fooddash" {
+    vpc_id = aws_vpc.food_app_vpc.id
+      
+      tags = {
+        Name = "fooddash-igw"
+      }
+}
+
+resource "aws_route_table" "food_app_public_route" {
+    vpc_id = aws_vpc.food_app_vpc.id
+  route  {
+    cidr_block = "0.0.0.0/0"
+    gateway_id =  aws_internet_gateway.fooddash.id
+  }
+}
+
 resource "aws_subnet" "pub_subnet_az_2a"{
     vpc_id = aws_vpc.food_app_vpc.id
     cidr_block = "10.0.1.0/24"  
