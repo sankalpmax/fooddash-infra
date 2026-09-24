@@ -27,6 +27,9 @@ resource "aws_route_table" "food_app_public_route" {
     cidr_block = "0.0.0.0/0"
     gateway_id =  aws_internet_gateway.fooddash.id
   }
+  tags = {
+    Name = "terraform_public_route"
+  }
 }
 
 resource "aws_route_table_association" "terraform_public_route_2a" {
