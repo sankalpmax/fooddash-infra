@@ -41,6 +41,7 @@ resource "aws_route_table_association" "terraform_public_route_2b" {
   
 }
 
+
 ## Private Route Table and Associations ##
 ## Private route table - No routes for now 
 ## NAT Gateway route 0.0.0.0/0 will be added in the future
