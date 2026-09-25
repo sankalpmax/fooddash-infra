@@ -44,12 +44,32 @@ resource "aws_route_table_association" "terraform_public_route_2b" {
   
 }
 
+## EIP for NAT ##
+resource "aws_eip" "fooddash_eip" {
+     domain = "vpc"
+  
+}
+## NAT ##
+resource "aws_nat_gateway" "nat_fooddash" {
+    subnet_id = aws_subnet.pub_subnet_az_2a.id
+    allocation_id = aws_eip.fooddash_eip.id
+
+    tags = {
+      Name = "nat_for_fooddash"
+    }
+  
+}
 
 ## Private Route Table and Associations ##
 ## Private route table - No routes for now 
 ## NAT Gateway route 0.0.0.0/0 will be added in the future
 resource "aws_route_table" "terraform_private_route" {
     vpc_id = aws_vpc.food_app_vpc.id
+
+    route {
+        cidr_block = "0.0.0.0/0"
+        nat_gateway_id = aws_nat_gateway.nat_fooddash.id
+    }
     
     tags = {
       Name = "terraform_private_route"
