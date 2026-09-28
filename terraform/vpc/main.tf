@@ -60,9 +60,82 @@ resource "aws_nat_gateway" "nat_fooddash" {
   
 }
 
+## Security Groups Section ##
+## We use inline ingress for declaring the SG rules ##
+resource "aws_security_group" "food_app_alb_sg" {
+  name = "food_app_alb_sg"
+  description = "security group for receving the authorised traffic"
+  vpc_id = aws_vpc.food_app_vpc.id
+
+    ingress  {
+        from_port = "80"
+        to_port = "80"
+        protocol = "tcp"
+        cidr_blocks = ["0.0.0.0/0"]
+    }
+  tags = {
+    name = "food_app_alb_sg"
+  }
+}
+
+resource "aws_security_group" "food_app_ec2_sg" {
+    name = "food_app_ec2_sg"
+    description = "security group for receving the authorised traffic from alb security group and the RDS security group "
+    vpc_id = aws_vpc.food_app_vpc.id
+
+    ingress  {
+        from_port ="3000"
+        to_port="3000"
+        protocol = "tcp"
+        security_groups = [aws_security_group.food_app_alb_sg.id]
+    }
+    ingress  {
+        from_port = "3001"
+        to_port = "3001"
+        protocol = "tcp"
+        security_groups = [aws_security_group.food_app_alb_sg.id] 
+
+    }
+    ingress {
+        from_port = "3002"
+        to_port = "3002"
+        protocol = "tcp"
+        security_groups = [aws_security_group.food_app_alb_sg.id ]
+    }
+    ingress {
+        from_port = "3003"
+        to_port = "3003"
+        protocol = "tcp"
+        security_groups = [aws_security_group.food_app_alb_sg.id]
+    }
+
+    ingress  {
+        from_port = "22"
+        to_port = "22"
+        protocol = "tcp"
+        cidr_blocks = ["49.43.241.218/32"]
+    }
+  
+}
+
+resource "aws_security_group" "food_app_rds_sg" {
+    name = "food_app_rds_sg"
+    description = "for secure outbound and inbound traffic"
+    vpc_id = aws_vpc.food_app_vpc.id
+
+    ingress {
+        from_port = "5432"
+        to_port = "5432"
+        protocol = "tcp"
+        security_groups = [aws_security_group.food_app_ec2_sg.id]
+    }
+  
+}
+
+
+
 ## Private Route Table and Associations ##
-## Private route table - No routes for now 
-## NAT Gateway route 0.0.0.0/0 will be added in the future
+
 resource "aws_route_table" "terraform_private_route" {
     vpc_id = aws_vpc.food_app_vpc.id
 
