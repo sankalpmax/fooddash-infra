@@ -45,20 +45,20 @@ resource "aws_route_table_association" "terraform_public_route_2b" {
 }
 
 ## EIP for NAT ##
-resource "aws_eip" "fooddash_eip" {
-     domain = "vpc"
-  
-}
-## NAT ##
-resource "aws_nat_gateway" "nat_fooddash" {
-    subnet_id = aws_subnet.pub_subnet_az_2a.id
-    allocation_id = aws_eip.fooddash_eip.id
+## Commented out to avoid costs until EC2 is deployed ##
+# resource "aws_eip" "fooddash_eip" {
+#      domain = "vpc"
+# }
 
-    tags = {
-      Name = "nat_for_fooddash"
-    }
-  
-}
+## NAT ##
+## Commented out to avoid costs until EC2 is deployed ##
+# resource "aws_nat_gateway" "nat_fooddash" {
+#     subnet_id     = aws_subnet.pub_subnet_az_2a.id
+#     allocation_id = aws_eip.fooddash_eip.id
+#     tags = {
+#       Name = "nat_for_fooddash"
+#     }
+# }
 
 ## Security Groups Section ##
 ## We use inline ingress for declaring the SG rules ##
@@ -139,10 +139,10 @@ resource "aws_security_group" "food_app_rds_sg" {
 resource "aws_route_table" "terraform_private_route" {
     vpc_id = aws_vpc.food_app_vpc.id
 
-    route {
-        cidr_block = "0.0.0.0/0"
-        nat_gateway_id = aws_nat_gateway.nat_fooddash.id
-    }
+   # route {
+    #    cidr_block = "0.0.0.0/0"
+    #    nat_gateway_id = aws_nat_gateway.nat_fooddash.id
+    #}
     
     tags = {
       Name = "terraform_private_route"
@@ -158,6 +158,32 @@ resource "aws_route_table_association" "terraform_private_subnet_az_2a" {
 resource "aws_route_table_association" "terraform_private_subnet_az_2b" {
     route_table_id = aws_route_table.terraform_private_route.id
     subnet_id = aws_subnet.private_subnet_az_2b.id
+  
+}
+
+## RDS Section ##
+
+resource "aws_db_subnet_group" "primary_subnet_rds_az_2a" {
+  name = "rds_private_subnet_grp"
+  subnet_ids = [ aws_subnet.private_subnet_az_2a.id , aws_subnet.private_subnet_az_2b.id ]
+
+  tags = {
+    name =  "rds_private_subnet_grp"
+  }
+}
+
+resource "aws_db_instance" "fooddash_db_instance" {
+ engine = "postgres"
+ engine_version = "18.3"
+ instance_class = "db.t4g.micro"
+ allocated_storage = 20
+ db_name = "fooddash_db_instance" 
+ username = "postgress"
+ password = var.db_password
+ db_subnet_group_name = aws_db_subnet_group.primary_subnet_rds_az_2a.name
+ vpc_security_group_ids = [aws_security_group.food_app_rds_sg.id] 
+ multi_az = false
+ skip_final_snapshot = true
   
 }
 ## Subnets's Section ##
