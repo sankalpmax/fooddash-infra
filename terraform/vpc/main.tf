@@ -114,9 +114,21 @@ resource "aws_security_group" "food_app_ec2_sg" {
         to_port = "22"
         protocol = "tcp"
         cidr_blocks = ["49.43.241.218/32"]
+
+    
+    }
+
+    egress  {
+        from_port = 0
+        to_port = 0
+        protocol = -1
+        cidr_blocks = ["0.0.0.0/0"]
     }
   
 }
+
+
+
 
 resource "aws_security_group" "food_app_rds_sg" {
     name = "food_app_rds_sg"
@@ -161,6 +173,38 @@ resource "aws_route_table_association" "terraform_private_subnet_az_2b" {
   
 }
 
+## EC2 Section ##
+resource "aws_instance" "fooddash_app_server" {
+    ami = "ami-0199ac7c9fbf9ed83"
+    instance_type = "t3.micro"
+    subnet_id = aws_subnet.private_subnet_az_2a.id
+    vpc_security_group_ids = [aws_security_group.food_app_ec2_sg.id]
+    key_name = "foodashkey"
+    user_data = <<-EOF
+    #!/bin/bash
+    sudo apt update && sudo apt upgrade -y
+    # your node install commands
+    sudo apt install -y git
+    sudo npm install -g pm2
+    git clone https://github.com/sankalpmax/fooddash.git /home/ubuntu/fooddash
+    cd /home/ubuntu/fooddash
+    cd user-service && npm install && cd ..
+    cd restaurant-service && npm install && cd ..
+    cd order-service && npm install && cd ..
+    cd frontend && npm install && npm run build && cd ..
+    pm2 start user-service/src/index.js --name user-service
+    pm2 start restaurant-service/src/index.js --name restaurant-service
+    pm2 start order-service/src/index.js --name order-service
+    pm2 start npx --name "frontend" -- serve -s dist -p 3000
+    pm2 startup
+    pm2 save
+    EOF
+
+    tags = {
+      name = "fooddash_application_server"
+    }
+}
+
 ## RDS Section ##
 
 resource "aws_db_subnet_group" "primary_subnet_rds_az_2a" {
@@ -186,6 +230,9 @@ resource "aws_db_instance" "fooddash_db_instance" {
  skip_final_snapshot = true
   
 }
+
+
+
 ## Subnets's Section ##
 
 
