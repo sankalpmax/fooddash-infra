@@ -3,16 +3,16 @@ set -e
 
 REGION="ap-south-2"
 BASTION_ID="i-06496d878e64fe2fe"
-APP_EC2_ID="i-04755f39f993686c5"
+# APP_EC2_ID removed - ASG manages EC2 instances now
 PUBLIC_SUBNET_ID="subnet-05fbaaea33c81a6b6"
 PRIVATE_ROUTE_TABLE_ID="rtb-0d4f1d68d438545fd"
 ASG_NAME="fooddash-asg"
 RDS_IDENTIFIER="fooddash"
 
 echo "==> Starting EC2 instances..."
-aws ec2 start-instances --instance-ids $APP_EC2_ID $BASTION_ID --region $REGION
+aws ec2 start-instances --instance-ids $BASTION_ID --region $REGION
 echo "Waiting for EC2 instances to start..."
-aws ec2 wait instance-running --instance-ids $APP_EC2_ID $BASTION_ID --region $REGION
+aws ec2 wait instance-running --instance-ids $BASTION_ID --region $REGION
 echo "EC2 instances started."
 
 echo "==> Starting RDS..."

@@ -26,8 +26,8 @@ else
 fi
 
 echo "==> Stopping EC2 instances..."
-aws ec2 stop-instances --instance-ids $APP_EC2_ID $BASTION_ID --region $REGION
-aws ec2 wait instance-stopped --instance-ids $APP_EC2_ID $BASTION_ID --region $REGION
+aws ec2 stop-instances --instance-ids $BASTION_ID --region $REGION
+aws ec2 wait instance-stopped --instance-ids $BASTION_ID --region $REGION
 echo "EC2 instances stopped."
 
 echo "==> Deleting NAT Gateway..."
