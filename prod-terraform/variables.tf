@@ -1,5 +1,5 @@
 variable "region" {                # Mumbai region 
- default = "ap-south-1a"
+ default = "ap-south-1"
 }
 
 variable "ami_id" {                     # production AMI fresh needs to be configure 
@@ -14,7 +14,7 @@ variable "az_1b"{                      # Multi AZ
     default = "ap_south-1b"
 }
 
-varible "db_password"{                     # RDS Creds 
+variable "db_password"{                     # RDS Creds 
     description = "RDS master password"
     type = string
     sensitive = true
