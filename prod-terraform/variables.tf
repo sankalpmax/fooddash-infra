@@ -6,12 +6,12 @@ variable "ami_id" {                     # production AMI fresh needs to be confi
     default = "ami-0fa52f1a01deb1658" 
 }
 
-variable "az_1a"{                       # Multi AZ 
-    default = "ap_south_1a"
+variable "az_1a" {                       # Multi AZ 
+    default = "ap-south-1a"
 }
 
-variable "az_1b"{                      # Multi AZ
-    default = "ap_south-1b"
+variable "az_1b" {                      # Multi AZ
+    default = "ap-south-1b"
 }
 
 variable "db_password"{                     # RDS Creds 
