@@ -10,9 +10,6 @@
 terraform.tfvars
 *.tfvars.json
 
-# Terraform lock
-.terraform.lock.hcl
-
 # Terraform plan files
 *.tfplan
 

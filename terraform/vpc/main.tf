@@ -179,7 +179,7 @@ resource "aws_lb_listener_rule" "restaurant_tg" {
   }
   condition {
     path_pattern {
-      values = ["/api/restaurants/*"]
+      values = ["/api/restaurants", "/api/restaurants/*"]
     }
   }
 }
