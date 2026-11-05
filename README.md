@@ -1,238 +1,46 @@
 # FoodDash Infrastructure
 
-Production-grade AWS cloud infrastructure for a microservices-based food delivery application, managed with Terraform Infrastructure as Code.
+Terraform examples for the FoodDash portfolio application. This repository is for learning and review; it is not a production deployment guide or a commercial service. Do not apply these configurations to a live account without first reviewing the code, state ownership, permissions, and expected changes.
 
-## 🏗️ Architecture Overview
+## Project status
 
-Multi-tier, highly available architecture deployed across 2 availability zones in AWS ap-south-1 (Mumbai) region.
+- The repository contains two independent Terraform roots for different AWS regions.
+- `prod-terraform/` is the Mumbai root (`ap-south-1`). Its directory name is historical and does not mean the configuration is production-ready.
+- `terraform/vpc/` is the Hyderabad root (`ap-south-2`).
+- The roots do not use reusable Terraform modules.
+- The Mumbai root configures an S3 backend with S3 native lockfiles. The Hyderabad root has no remote backend configuration and uses local state by default.
+- The configurations demonstrate VPC networking, load balancing, EC2/Auto Scaling, IAM, and RDS. RDS is configured as single-AZ; the ALBs use HTTP; and each VPC design uses one NAT gateway. These examples should not be described as highly available or production-hardened.
+- A prior infrastructure audit found unresolved resource ownership and state-to-AWS discrepancies. That audit did not authorize infrastructure changes.
 
-### Key Components
+## Repository layout
 
-- **VPC**: Custom Virtual Private Cloud with public and private subnet isolation
-- **Load Balancing**: Application Load Balancer with path-based routing for microservices
-- **Compute**: Auto Scaling Groups with Launch Templates for automatic scaling and self-healing
-- **Database**: RDS PostgreSQL in private subnet with Multi-AZ capability
-- **Security**: Security group chaining, IAM roles, AWS Secrets Manager integration
-- **Infrastructure as Code**: Terraform with remote state management (S3 + DynamoDB locking)
-
-## 📊 Architecture Diagram
-
-```
-Internet
-   ↓
-[Internet Gateway]
-   ↓
-┌─────────────────────────────────────────────────────┐
-│ VPC (10.0.0.0/16)                                   │
-│                                                     │
-│  Public Subnets (AZ-1a, AZ-1b)                     │
-│  ┌──────────────────────────────────────┐          │
-│  │  Application Load Balancer           │          │
-│  │  - Path-based routing                │          │
-│  │  - Health checks                     │          │
-│  └──────────────────────────────────────┘          │
-│           ↓                                         │
-│  Private Subnets (AZ-1a, AZ-1b)                    │
-│  ┌──────────────────────────────────────┐          │
-│  │  Auto Scaling Group                  │          │
-│  │  ┌────────────────────────────────┐  │          │
-│  │  │ EC2 Instances                  │  │          │
-│  │  │ - Frontend (3000)              │  │          │
-│  │  │ - User Service (3001)          │  │          │
-│  │  │ - Restaurant Service (3002)    │  │          │
-│  │  │ - Order Service (3003)         │  │          │
-│  │  └────────────────────────────────┘  │          │
-│  └──────────────────────────────────────┘          │
-│           ↓                                         │
-│  ┌──────────────────────────────────────┐          │
-│  │  RDS PostgreSQL (Private Subnet)     │          │
-│  │  - Multi-AZ ready                    │          │
-│  │  - Automated backups                 │          │
-│  └──────────────────────────────────────┘          │
-│                                                     │
-│  [NAT Gateway] → Internet (for updates)            │
-└─────────────────────────────────────────────────────┘
+```text
+.
+├── prod-terraform/       # Mumbai Terraform root
+├── terraform/vpc/        # Hyderabad Terraform root
+└── scripts/
+    ├── startup.sh        # Operational AWS script; changes resources
+    └── shutdown.sh       # Operational AWS script; changes resources
 ```
 
-## 🛠️ Technology Stack
+The startup and shutdown scripts issue AWS resource modification operations. Review their targets and effects before using them. They are not read-only audit tools.
 
-- **Cloud Provider**: AWS (Amazon Web Services)
-- **IaC Tool**: Terraform v1.x
-- **Services Used**:
-  - VPC, Subnets, Internet Gateway, NAT Gateway
-  - Application Load Balancer (ALB)
-  - Auto Scaling Groups (ASG)
-  - EC2 (t3.micro instances)
-  - RDS PostgreSQL
-  - IAM Roles & Policies
-  - AWS Secrets Manager
-  - S3 (Terraform state)
-  - DynamoDB (State locking)
+## Resources represented in the Terraform code
 
-## 📁 Project Structure
+Depending on the root, the code declares VPCs, public and private subnets, internet and NAT gateways, route tables, security groups, IAM roles and policies, target groups, an Application Load Balancer, a launch template, an Auto Scaling group, and an RDS PostgreSQL instance.
 
-```
-fooddash-infra/
-├── prod-terraform/          # Production environment
-│   ├── main.tf             # Main infrastructure resources
-│   ├── variables.tf        # Input variables
-│   ├── output.tf           # Output values
-│   ├── provider.tf         # AWS provider configuration
-│   └── backend.tf          # Remote state configuration
-└── terraform/              # Legacy/test configurations
-    ├── vpc/
-    ├── alb/
-    ├── ec2/
-    └── rds/
-```
+Terraform source describes intended configuration. It does not establish that a resource currently exists in AWS or that a particular state file owns it.
 
-## 🚀 Deployment
+## Backend and sensitive data
 
-### Prerequisites
+The Mumbai backend settings are declared in `prod-terraform/provider.tf`; the bucket name and key are intentionally not repeated here. The backend uses S3 native lockfiles. The Hyderabad root does not configure a remote backend.
 
-- AWS CLI configured with appropriate credentials
-- Terraform v1.x installed
-- AWS account with necessary permissions
+Do not commit Terraform state, plan files, `.tfvars` files containing secrets, or credentials. Supply sensitive inputs through a secure local mechanism. Keep the provider lock file committed for reproducible provider selection.
 
-### Setup
+## Review before deployment
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/sankalpmax/fooddash-infra.git
-   cd fooddash-infra/prod-terraform
-   ```
+No Terraform command is required to read these source files. Before considering a deployment, establish the correct AWS account, review the plan, confirm state ownership and resource impact, and separately authorize that operation. The presence of a directory named `prod-terraform` is not evidence that deployment is safe.
 
-2. **Initialize Terraform**
-   ```bash
-   terraform init
-   ```
+## Related project
 
-3. **Create terraform.tfvars**
-   ```hcl
-   region      = "ap-south-1"
-   ami_id      = "ami-0fa52f1a01deb1658"  # Ubuntu 22.04
-   db_password = "your-secure-password"
-   ```
-
-4. **Preview changes**
-   ```bash
-   terraform plan
-   ```
-
-5. **Apply infrastructure**
-   ```bash
-   terraform apply
-   ```
-
-6. **Access application**
-   ```bash
-   # Get ALB DNS from output
-   terraform output alb_dns_name
-   # Open in browser: http://<alb-dns-name>
-   ```
-
-### Destroy Infrastructure
-
-```bash
-terraform destroy
-```
-
-## 🔐 Security Features
-
-- **Network Isolation**: Public/private subnet segregation
-- **Security Groups**: Layered security with group chaining (ALB → EC2 → RDS)
-- **IAM Roles**: No hardcoded credentials, role-based access
-- **Secrets Management**: Database credentials in AWS Secrets Manager
-- **Private Database**: RDS in private subnet, no internet access
-- **Least Privilege**: Minimal required permissions per resource
-
-## 💰 Cost Optimization
-
-- **Right-sizing**: t3.micro instances for development
-- **Auto Scaling**: Scale to zero when not in use
-- **Single NAT Gateway**: Shared across private subnets
-- **GP2 Storage**: Cost-effective EBS volumes
-
-**Estimated Monthly Cost**: ~$67 USD (if running 24/7)
-- NAT Gateway: ~$32
-- RDS: ~$12
-- EC2: ~$7.5
-- ALB: ~$16
-
-## 📈 High Availability Design
-
-- **Multi-AZ Deployment**: Resources across 2 availability zones
-- **Auto Scaling**: Automatic instance replacement on failure
-- **Health Checks**: ALB removes unhealthy instances from rotation
-- **RDS Multi-AZ**: (Optional) Automatic database failover
-
-## 🔄 State Management
-
-- **Backend**: S3 bucket with versioning enabled
-- **Locking**: DynamoDB table prevents concurrent modifications
-- **Encryption**: State encrypted at rest
-- **Team Collaboration**: Shared state accessible to team members
-
-## 📝 Key Design Decisions
-
-### Why Multi-AZ?
-Ensures high availability and fault tolerance. If one AZ fails, resources in the other AZ continue serving traffic.
-
-### Why Private Subnets for Application?
-Security best practice. Application servers don't need direct internet access, reducing attack surface. ALB acts as gateway.
-
-### Why Path-Based Routing?
-Allows single ALB to route traffic to multiple microservices based on URL path, reducing infrastructure complexity and cost.
-
-### Why Auto Scaling?
-Provides self-healing capability and ability to scale based on demand without manual intervention.
-
-## 🐛 Troubleshooting
-
-### Issue: Terraform state locked
-```bash
-# Force unlock (use with caution)
-terraform force-unlock <lock-id>
-```
-
-### Issue: RDS connection timeout
-- Verify security group allows traffic from EC2 SG
-- Check RDS is in correct private subnet
-- Confirm RDS endpoint in Secrets Manager
-
-### Issue: ALB returns 502/503
-- Check target group health status
-- Verify EC2 instances are running
-- Check application logs on EC2
-- Increase health check grace period
-
-## 🎯 Future Enhancements
-
-- [ ] CI/CD pipeline with GitHub Actions
-- [ ] Docker containerization for services
-- [ ] CloudWatch alarms and monitoring
-- [ ] WAF (Web Application Firewall) integration
-- [ ] Second NAT Gateway for redundancy
-- [ ] CloudFront CDN for frontend
-- [ ] Terraform modules for reusability
-- [ ] Multi-region deployment
-
-## 📚 Documentation
-
-- [AWS VPC Best Practices](https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-best-practices.html)
-- [Terraform AWS Provider](https://registry.terraform.io/providers/hashicorp/aws/latest/docs)
-- [AWS Well-Architected Framework](https://aws.amazon.com/architecture/well-architected/)
-
-## 👨‍💻 Author
-
-**Sankalp**
-- GitHub: [@sankalpmax](https://github.com/sankalpmax)
-- LinkedIn: [Your LinkedIn Profile]
-
-## 📄 License
-
-This project is open source and available under the [MIT License](LICENSE).
-
----
-
-**Note**: This is a learning/portfolio project demonstrating production-grade infrastructure design patterns. For actual production deployments, additional considerations like compliance requirements, disaster recovery planning, and security hardening would be necessary.
+The [`fooddash`](https://github.com/sankalpmax/fooddash) repository contains the application prototype and its experimental sandbox workflow.
