@@ -12,6 +12,33 @@ Terraform examples for the FoodDash portfolio application. This repository is fo
 - The configurations demonstrate VPC networking, load balancing, EC2/Auto Scaling, IAM, and RDS. RDS is configured as single-AZ; the ALBs use HTTP; and each VPC design uses one NAT gateway. These examples should not be described as highly available or production-hardened.
 - A prior infrastructure audit found unresolved resource ownership and state-to-AWS discrepancies. That audit did not authorize infrastructure changes.
 
+## Terraform roots
+
+The repository contains two independent Terraform roots. They share no state, no modules, and no backend configuration.
+
+```text
+  prod-terraform/                      terraform/vpc/
+  Mumbai — ap-south-1                  Hyderabad — ap-south-2
+  ┌───────────────────────┐            ┌───────────────────────┐
+  │ S3 remote backend      │            │ Local state            │
+  │ use_lockfile = true    │            │ (no remote backend)    │
+  │                        │            │                        │
+  │ VPC, 2 AZ              │            │ VPC, 2 AZ              │
+  │ Public/private subnets │            │ Public/private subnets │
+  │ IGW + NAT gateway      │            │ IGW + NAT gateway      │
+  │ ALB + 4 target groups  │            │ ALB + 4 target groups  │
+  │ ASG + launch template  │            │ ASG + launch template  │
+  │ RDS PostgreSQL         │            │ RDS PostgreSQL         │
+  │ IAM role + policy      │            │ IAM role + policy      │
+  └───────────────────────┘            └───────────────────────┘
+        │                                      │
+        ▼                                      ▼
+  S3 bucket (state)                    terraform.tfstate (local)
+  S3 lockfile (locking)                No locking
+```
+
+Terraform source describes intended configuration. It does not establish that a resource currently exists in AWS or that a particular state file owns it. A prior audit found that not all source declarations appear in state, and not all state entries could be confirmed in AWS.
+
 ## Repository layout
 
 ```text
@@ -40,6 +67,30 @@ Do not commit Terraform state, plan files, `.tfvars` files containing secrets, o
 ## Review before deployment
 
 No Terraform command is required to read these source files. Before considering a deployment, establish the correct AWS account, review the plan, confirm state ownership and resource impact, and separately authorize that operation. The presence of a directory named `prod-terraform` is not evidence that deployment is safe.
+
+## Implemented and still in progress
+
+**Implemented:**
+
+- Two independent Terraform roots covering Mumbai and Hyderabad regions
+- VPC with public/private subnet isolation across 2 AZs per root
+- ALB with path-based routing to 4 microservice target groups
+- Auto Scaling Group with Launch Template
+- RDS PostgreSQL in private subnet (single-AZ)
+- IAM roles and policies for EC2 (Secrets Manager, ECR, SSM access)
+- S3 remote backend with native lockfiles (Mumbai root)
+- Startup/shutdown scripts for sandbox cost management
+- Read-only infrastructure audit: source-to-state-to-AWS reconciliation
+
+**Still in progress:**
+
+- No Terraform modules — both roots use direct resource declarations
+- Hyderabad root uses local state with no remote backend or locking
+- RDS is single-AZ with no automated failover
+- ALB uses HTTP only — no HTTPS listener or certificate
+- No Terraform CI/CD pipeline (plan/apply workflow)
+- Audit found 10 source-only declarations not in state and 6 state entries not confirmed in AWS
+- IAM resource verification was limited by access-denied responses during the audit
 
 ## Related project
 
